@@ -1977,7 +1977,7 @@ class CF_Object
                 
             if ($finfo) {
 
-                if (is_file((string)$handle))
+                if ($this->is_really_a_file($handle))
                     $ct = @finfo_file($finfo, $handle);
                 else 
                     $ct = @finfo_buffer($finfo, $handle);
@@ -1998,7 +1998,7 @@ class CF_Object
             }
         }
 
-        if (!$this->content_type && (string)is_file($handle) && function_exists("mime_content_type")) {
+        if (!$this->content_type && $this->is_really_a_file($handle) && function_exists("mime_content_type")) {
             $this->content_type = @mime_content_type($handle);
         }
 
@@ -2525,7 +2525,6 @@ class CF_Object
      */
     function compute_md5sum(&$data)
     {
-
         if (function_exists("hash_init") && is_resource($data)) {
             $ctx = hash_init('md5');
             while (!feof($data)) {
@@ -2534,11 +2533,12 @@ class CF_Object
             }
             $md5 = hash_final($ctx, false);
             rewind($data);
-        } elseif ((string)is_file($data)) {
+        } elseif ($this->is_really_a_file($data)) {
             $md5 = md5_file($data);
         } else {
             $md5 = md5($data);
         }
+
         return $md5;
     }
 
@@ -2590,6 +2590,17 @@ class CF_Object
                "\n" . $expires . "\n" . parse_url($url, PHP_URL_PATH), $key) .
                '&temp_url_expires=' . $expires;
     }
+
+    public function is_really_a_file($data)
+    {
+        try {
+            return is_file($data);
+        } catch(\Exception $e) {
+            // Binary content ?
+            return false;
+        }
+    }
+
 
     #private function _re_auth()
     #{
